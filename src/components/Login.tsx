@@ -22,8 +22,8 @@ export default function Login() {
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
             <div className="p-8 bg-gray-800 rounded-lg shadow-xl text-center">
                 <Activity className="w-16 h-16 mx-auto mb-4 text-orange-500" />
-                <h1 className="text-3xl font-bold mb-2">Strava Gemini Coach</h1>
-                <p className="text-gray-400 mb-8">AI-powered training insights from your Strava history.</p>
+                <h1 className="text-3xl font-bold mb-2">Coachweek</h1>
+                <p className="text-gray-400 mb-8">Data into direction, sweat into success</p>
                 <button
                     onClick={handleLogin}
                     className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-full transition duration-300 flex items-center justify-center mx-auto mb-4"
