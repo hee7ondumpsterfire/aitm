@@ -1,6 +1,7 @@
+require('dotenv').config({ path: '.env.local' });
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
-const apiKey = 'AIzaSyDvFyeHzlNOKv-Bq6JIlt5_LA4HaWQjm3o';
+const apiKey = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
 
 async function run() {
