@@ -5,13 +5,14 @@ import Link from 'next/link';
 interface FooterProps {
     onAboutClick: () => void;
     onFollowClick?: () => void;
+    darkMode: boolean;
 }
 
-export default function Footer({ onAboutClick, onFollowClick }: FooterProps) {
+export default function Footer({ onAboutClick, onFollowClick, darkMode }: FooterProps) {
     return (
-        <footer className="mt-12 mb-8 grid grid-cols-1 md:grid-cols-4 gap-8 text-gray-500 text-sm max-w-7xl mx-auto px-8 w-full">
+        <footer className={`mt-12 mb-8 grid grid-cols-1 md:grid-cols-4 gap-8 ${darkMode ? 'text-white' : 'text-gray-500'} text-sm max-w-7xl mx-auto px-8 w-full`}>
             <div>
-                <h4 className="font-bold text-gray-900 mb-4">About</h4>
+                <h4 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>About</h4>
                 <ul className="space-y-2">
                     <li><button onClick={onAboutClick} className="hover:text-purple-600 transition">About us</button></li>
                     <li><a href="#" className="hover:text-purple-600 transition">Career</a></li>
@@ -19,9 +20,9 @@ export default function Footer({ onAboutClick, onFollowClick }: FooterProps) {
                 </ul>
             </div>
             <div>
-                <h4 className="font-bold text-gray-900 mb-4">Community</h4>
+                <h4 className={`font-bold ${darkMode ? 'text-white' : 'text-gray-900'} mb-4`}>Community</h4>
                 <ul className="space-y-2">
-                    <li><a href="/blog" className="hover:text-purple-600 transition">Blog</a></li>
+                    <li><Link href="/blog" className="hover:text-purple-600 transition">Blog</Link></li>
                     <li><button onClick={onFollowClick} className="hover:text-purple-600 transition">Follow us</button></li>
                     <li><a href="#" className="hover:text-purple-600 transition">Support</a></li>
                 </ul>

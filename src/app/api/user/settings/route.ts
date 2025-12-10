@@ -50,14 +50,25 @@ export async function POST(request: Request) {
     }
 
     try {
-        const settings = await request.json();
-        // Basic validation
-        if (typeof settings.maxHr !== 'number' || typeof settings.ftp !== 'number') {
+        const newSettings = await request.json();
+
+        // Fetch existing settings to merge (prevent overwriting)
+        const existingSettings = await getUserSettings(stravaId) || {};
+
+        const mergedSettings = {
+            ...existingSettings,
+            ...newSettings
+        };
+
+        // Basic validation (only if sensitive fields are being updated or if new record)
+        // If updating just darkMode, we might not send maxHr/ftp
+        if ((newSettings.maxHr !== undefined && typeof newSettings.maxHr !== 'number') ||
+            (newSettings.ftp !== undefined && typeof newSettings.ftp !== 'number')) {
             return NextResponse.json({ error: 'Invalid settings data' }, { status: 400 });
         }
 
-        await saveUserSettings(stravaId, settings);
-        return NextResponse.json({ success: true });
+        await saveUserSettings(stravaId, mergedSettings as any);
+        return NextResponse.json({ success: true, settings: mergedSettings });
     } catch (error) {
         console.error('Error saving settings:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

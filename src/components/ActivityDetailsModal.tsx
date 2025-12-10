@@ -1,5 +1,6 @@
-import React from 'react';
-import { X, Calendar, MapPin, Clock, Activity, Zap, Heart, TrendingUp, Mountain } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Calendar, MapPin, Clock, Activity, Zap, Heart, TrendingUp, Mountain, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import axios from 'axios';
 
 interface ActivityDetailsModalProps {
     activity: any | null;
@@ -7,6 +8,35 @@ interface ActivityDetailsModalProps {
 }
 
 export default function ActivityDetailsModal({ activity, onClose }: ActivityDetailsModalProps) {
+    const [analysis, setAnalysis] = useState<any>(null);
+    const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+    const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (activity) {
+            setAnalysis(null);
+            setError('');
+            // Only analyze if we have HR data
+            if (activity.average_heartrate) {
+                fetchAnalysis(activity.id);
+            }
+        }
+    }, [activity]);
+
+    const fetchAnalysis = async (id: number) => {
+        setLoadingAnalysis(true);
+        try {
+            const response = await axios.get(`/api/strava/analysis?activityId=${id}`);
+            setAnalysis(response.data);
+        } catch (err: any) {
+            console.error('Analysis fetch failed', err);
+            const errorMessage = err.response?.data?.error || 'Analysis unavailable for this activity';
+            setError(errorMessage);
+        } finally {
+            setLoadingAnalysis(false);
+        }
+    };
+
     if (!activity) return null;
 
     // Helper to format duration
@@ -32,18 +62,24 @@ export default function ActivityDetailsModal({ activity, onClose }: ActivityDeta
         }
     };
 
+    const getDriftColor = (drift: number) => {
+        if (drift < 3) return 'text-green-600 bg-green-50 border-green-200';
+        if (drift < 5) return 'text-yellow-600 bg-yellow-50 border-yellow-200';
+        return 'text-red-600 bg-red-50 border-red-200';
+    };
+
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-            <div className="bg-white w-full max-w-lg shadow-2xl overflow-hidden relative rounded-lg">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-lg shadow-2xl overflow-hidden relative rounded-xl flex flex-col max-h-[90vh]">
                 <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 z-10"
+                    className="absolute top-4 right-4 text-white/80 hover:text-white z-10 transition-colors"
                 >
                     <X className="w-6 h-6" />
                 </button>
 
-                {/* Header with Map Placeholder or Activity Type Icon */}
-                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white">
+                {/* Header */}
+                <div className="bg-gradient-to-r from-purple-600 to-indigo-600 p-6 text-white shrink-0">
                     <div className="flex items-center gap-2 mb-2 opacity-80 text-sm uppercase tracking-wider font-semibold">
                         <Activity className="w-4 h-4" />
                         {activity.type}
@@ -62,8 +98,9 @@ export default function ActivityDetailsModal({ activity, onClose }: ActivityDeta
                     </div>
                 </div>
 
-                <div className="p-6">
-                    <div className="grid grid-cols-2 gap-6 mb-6">
+                <div className="p-6 overflow-y-auto">
+                    {/* Main Stats Grid */}
+                    <div className="grid grid-cols-2 gap-6 mb-8">
                         <div className="flex flex-col">
                             <span className="text-gray-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
                                 <Clock className="w-3 h-3" /> Time
@@ -90,38 +127,82 @@ export default function ActivityDetailsModal({ activity, onClose }: ActivityDeta
                         </div>
                     </div>
 
-                    <div className="border-t border-gray-100 pt-6 grid grid-cols-2 gap-6">
+                    {/* Secondary Stats */}
+                    <div className="border-t border-gray-100 pt-6 grid grid-cols-3 gap-4 mb-8">
                         {activity.average_watts && (
                             <div className="flex flex-col">
-                                <span className="text-gray-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                <span className="text-gray-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1 text-nowrap">
                                     <Zap className="w-3 h-3 text-yellow-500" /> Avg Power
                                 </span>
-                                <span className="text-xl font-bold text-gray-900">{Math.round(activity.average_watts)} w</span>
-                                {activity.weighted_average_watts && (
-                                    <span className="text-xs text-gray-500">NP: {Math.round(activity.weighted_average_watts)} w</span>
-                                )}
+                                <span className="text-lg font-bold text-gray-900">{Math.round(activity.average_watts)} w</span>
                             </div>
                         )}
 
                         {activity.average_heartrate && (
                             <div className="flex flex-col">
-                                <span className="text-gray-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                                <span className="text-gray-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1 text-nowrap">
                                     <Heart className="w-3 h-3 text-red-500" /> Avg HR
                                 </span>
-                                <span className="text-xl font-bold text-gray-900">{Math.round(activity.average_heartrate)} bpm</span>
-                                {activity.max_heartrate && (
-                                    <span className="text-xs text-gray-500">Max: {Math.round(activity.max_heartrate)} bpm</span>
-                                )}
+                                <span className="text-lg font-bold text-gray-900">{Math.round(activity.average_heartrate)} bpm</span>
                             </div>
                         )}
 
                         <div className="flex flex-col">
-                            <span className="text-gray-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1">
+                            <span className="text-gray-500 text-xs uppercase tracking-wider mb-1 flex items-center gap-1 text-nowrap">
                                 <Activity className="w-3 h-3 text-orange-500" /> Calories
                             </span>
-                            <span className="text-xl font-bold text-gray-900">{Math.round(activity.kilojoules || activity.calories || 0)}</span>
+                            <span className="text-lg font-bold text-gray-900">{Math.round(activity.kilojoules || activity.calories || 0)}</span>
                         </div>
                     </div>
+
+                    {/* Cardiac Drift Analysis Section */}
+                    <div className="border-t border-gray-100 pt-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                                <Activity className="w-5 h-5 text-purple-600" />
+                                Cardiac Drift Analysis
+                            </h3>
+                            {loadingAnalysis && <span className="text-xs text-purple-600 animate-pulse font-medium">Analyzing streams...</span>}
+                        </div>
+
+                        {loadingAnalysis ? (
+                            <div className="bg-gray-50 rounded-lg p-6 flex flex-col items-center justify-center gap-3 animate-pulse">
+                                <div className="w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin"></div>
+                                <p className="text-sm text-gray-400">Calculating efficiency factor...</p>
+                            </div>
+                        ) : analysis ? (
+                            <div className={`rounded-xl p-5 border ${getDriftColor(analysis.drift)} transition-all`}>
+                                <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                        <div className="text-xs uppercase tracking-wider font-semibold opacity-70 mb-1">Decoupling (Pw:HR)</div>
+                                        <div className="text-3xl font-extrabold flex items-center gap-2">
+                                            {analysis.drift > 0 ? '+' : ''}{analysis.drift}%
+                                            {analysis.drift < 5 ? <CheckCircle className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="text-xs opacity-70">Efficiency Factor</div>
+                                        <div className="font-mono text-sm font-bold">
+                                            {analysis.ef1} <span className="text-xs font-normal text-gray-500">→</span> {analysis.ef2}
+                                        </div>
+                                    </div>
+                                </div>
+                                <p className="text-sm font-medium opacity-90 leading-snug">
+                                    {analysis.interpretation}
+                                </p>
+                            </div>
+                        ) : error ? (
+                            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-500 flex items-center gap-2">
+                                <Info className="w-4 h-4" />
+                                {error}
+                            </div>
+                        ) : (
+                            <div className="bg-gray-50 rounded-lg p-4 text-sm text-gray-500 italic">
+                                No heart rate data available for analysis.
+                            </div>
+                        )}
+                    </div>
+
                 </div>
             </div>
         </div>

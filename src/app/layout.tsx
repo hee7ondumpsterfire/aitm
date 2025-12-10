@@ -44,10 +44,10 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
-  icons: {
-    icon: '/favicon.ico',
-  },
+
 };
+
+import { ThemeProvider } from '@/context/ThemeContext';
 
 export default function RootLayout({
   children,
@@ -56,8 +56,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">
-        {children}
+      <body className="antialiased" suppressHydrationWarning={true}>
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

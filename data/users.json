@@ -3,6 +3,8 @@
     "maxHr": 190,
     "ftp": 275,
     "weight": 73,
-    "height": 178
+    "height": 178,
+    "colorBlindMode": false,
+    "darkMode": true
   }
 }

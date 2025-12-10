@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-
 import Groq from 'groq-sdk';
 import { generateFallbackPlan } from '@/lib/fallbackPlans';
 
@@ -68,11 +67,26 @@ export async function POST(request: Request) {
         ${tssInstruction}
 
         STRICT OUTPUT FORMATTING RULES:
-        1. Return the plan ONLY as a Markdown table.
-        2. The table MUST have exactly these columns: | Day | Activity Name | Duration | Description with Goal |
-        3. The "Day" column must cover Monday to Sunday.
-        4. Do NOT include any introductory text or general training notes before the table.
-        5. After the table, include a brief section titled "## Important Considerations" with 3-4 bullet points.
+        1. Return the plan ONLY as a valid JSON object. Do not include any text before or after the JSON.
+        2. Follow this exact JSON structure:
+        {
+            "weekly_summary": "Brief explanation of the week's focus (2 sentences max).",
+            "workouts": [
+                {
+                    "day": "Monday",
+                    "activity_name": "Activity Title",
+                    "duration": "60 min",
+                    "description": "Detailed description of the workout.",
+                    "type": "Ride" | "Run" | "Swim" | "Rest", 
+                    "structure": [
+                        { "segment_type": "Warm Up" | "Active" | "Interval" | "Recovery" | "Cool Down", "duration_minutes": 10, "intensity_pct_ftp": 0.50 }
+                    ]
+                }
+            ]
+        }
+        3. For "Rest" days, return an empty structure array.
+        4. For structured workouts (Intervals), break them down into segments in the "structure" array. 
+           - intensity_pct_ftp: 0.5 = 50% FTP (Recovery), 0.7 = Endurance, 0.9 = Sweetspot, 1.0 = Threshold, 1.2 = VO2 Max.
         `;
 
         if (questionnaire) {
@@ -108,15 +122,15 @@ export async function POST(request: Request) {
             IMPORTANT: Follow the Polarized Training Model.
             - 80% of the training time should be at low intensity (Zone 1/2, easy effort).
             - 20% of the training time should be at high intensity (Zone 4/5, hard effort).
-            - Clearly label each session as "LIT" (Low Intensity Training) or "HIT" (High Intensity Training) in the Description.
             - Ensure the total volume respects the 80/20 split.
             `;
         }
 
         const completion = await groq.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
-            model: "llama3-70b-8192",
-            temperature: 0.5,
+            model: "llama-3.3-70b-versatile",
+            temperature: 0.2, // Lower temp for valid JSON
+            response_format: { type: "json_object" }, // Force JSON mode
         });
 
         const text = completion.choices[0]?.message?.content || "";

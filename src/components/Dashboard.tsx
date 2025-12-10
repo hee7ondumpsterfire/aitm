@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { Activity as ActivityIcon, Calendar, Clock, MapPin, Bike, Waves, Footprints, Mountain } from 'lucide-react';
 import Questionnaire, { QuestionnaireData } from './Questionnaire';
+import WorkoutCard from './WorkoutCard';
 import ActivityPieChart from './ActivityPieChart';
 import HRZoneChart from './HRZoneChart';
 import PowerZoneChart from './PowerZoneChart';
@@ -19,6 +20,7 @@ import AboutUsModal from './AboutUsModal';
 import SocialMediaModal from './SocialMediaModal';
 import Header from './Header';
 import Footer from './Footer';
+import ChatWidget from './ChatWidget';
 import { startOfWeek, endOfWeek, subWeeks, isWithinInterval, parseISO } from 'date-fns';
 
 interface Activity {
@@ -34,11 +36,16 @@ interface Activity {
     weighted_average_watts?: number;
 }
 
+import { useTheme } from '@/context/ThemeContext';
+
+import ZwiftExportModal from './ZwiftExportModal';
+
 export default function Dashboard({ isGuest = false }: { isGuest?: boolean }) {
+    // ... activities state ...
     const [activities, setActivities] = useState<Activity[]>([]);
     const [zones, setZones] = useState<any>(null);
     const [loading, setLoading] = useState(true);
-    const [plan, setPlan] = useState<string | null>(null);
+    const [plan, setPlan] = useState<any>(null);
     const [generatingPlan, setGeneratingPlan] = useState(false);
     const [showQuestionnaire, setShowQuestionnaire] = useState(false);
     const [showIntro, setShowIntro] = useState(false);
@@ -46,6 +53,7 @@ export default function Dashboard({ isGuest = false }: { isGuest?: boolean }) {
     const [showFeelingSurvey, setShowFeelingSurvey] = useState(false);
     const [showAboutUs, setShowAboutUs] = useState(false);
     const [showSocialMedia, setShowSocialMedia] = useState(false);
+
     const [stravaProfile, setStravaProfile] = useState<any>(null);
     const [userSettings, setUserSettings] = useState({
         maxHr: 190,
@@ -55,7 +63,7 @@ export default function Dashboard({ isGuest = false }: { isGuest?: boolean }) {
         colorBlindMode: false
     });
     const [planType, setPlanType] = useState<'standard' | 'polarized'>('standard');
-    const [darkMode, setDarkMode] = useState(false);
+    const { darkMode, setDarkMode } = useTheme();
 
 
     const [authError, setAuthError] = useState(false);
@@ -224,8 +232,19 @@ export default function Dashboard({ isGuest = false }: { isGuest?: boolean }) {
             if (targetTSS) payload.targetTSS = targetTSS;
             if (feeling) payload.feeling = feeling;
 
-            const response = await axios.post('/api/gemini/coach', payload);
-            setPlan(response.data.plan);
+            const response = await axios.post('/api/ai/coach', payload);
+
+            let planData = response.data.plan;
+            if (typeof planData === 'string') {
+                try {
+                    planData = JSON.parse(planData);
+                } catch (e) {
+                    console.error("Failed to parse plan JSON", e);
+                    // Fallback if AI returned plain text/markdown by mistake
+                    planData = { weekly_summary: "Generated Plan", workouts: [] };
+                }
+            }
+            setPlan(planData);
         } catch (error) {
             console.error('Failed to generate plan', error);
         } finally {
@@ -338,6 +357,16 @@ export default function Dashboard({ isGuest = false }: { isGuest?: boolean }) {
                                 >
                                     {generatingPlan ? 'Analyzing...' : 'Generate Plan'}
                                 </button>
+
+                                {plan && (
+                                    <button
+                                        onClick={() => setShowZwiftModal(true)}
+                                        className="bg-orange-500 hover:bg-orange-600 text-white font-bold p-2 rounded-full transition duration-300 shadow-sm"
+                                        title="Export Workouts to Zwift"
+                                    >
+                                        <Bike className="w-5 h-5" />
+                                    </button>
+                                )}
                             </div>
                         )}
                     </Header>
@@ -358,7 +387,7 @@ export default function Dashboard({ isGuest = false }: { isGuest?: boolean }) {
 
                         {/* Column 2: Coach Plan */}
                         <div
-                            className="bg-gray-200 p-6 shadow-lg border border-purple-500/30 rounded-none flex flex-col relative overflow-hidden h-full"
+                            className={`${darkMode ? 'bg-[#99A1AF]' : 'bg-gray-200'} p-6 shadow-lg border border-purple-500/30 rounded-none flex flex-col relative overflow-hidden h-full`}
                             style={{
                                 backgroundImage: `url('/cyclist_watermark.png')`,
                                 backgroundSize: 'cover',
@@ -368,15 +397,32 @@ export default function Dashboard({ isGuest = false }: { isGuest?: boolean }) {
                         >
                             <div className="absolute inset-0 bg-white/60 pointer-events-none"></div>
                             <div className="relative z-10 flex flex-col h-full">
-                                <h2 className="text-xl font-semibold mb-4 text-purple-700">Consistency is key</h2>
+                                <h2 className="text-xl font-semibold mb-2 text-purple-700">Coach's Plan</h2>
                                 {plan ? (
-                                    <div className="prose max-w-none w-full text-gray-900 flex-1 overflow-y-auto pr-2">
-                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{plan}</ReactMarkdown>
+                                    <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                        {plan.weekly_summary && (
+                                            <div className="mb-4 bg-white/80 p-3 rounded-xl text-sm italic border-l-4 border-purple-500 shadow-sm">
+                                                "{plan.weekly_summary}"
+                                            </div>
+                                        )}
+
+                                        <div className="space-y-4 pb-4">
+                                            {plan.workouts?.map((workout: any, idx: number) => (
+                                                <WorkoutCard
+                                                    key={idx}
+                                                    workout={workout}
+                                                    userSettings={{ ftp: userSettings.ftp, maxHr: userSettings.maxHr }}
+                                                />
+                                            ))}
+                                        </div>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col items-center justify-center h-full text-gray-500 italic">
-                                        <p>No plan generated yet.</p>
-                                        <p className="text-sm mt-2">Click "Generate Plan" to get started.</p>
+                                    <div className="flex flex-col items-center justify-center h-full text-gray-500 italic text-center p-4">
+                                        <div className="bg-white/50 p-4 rounded-full mb-4">
+                                            <Bike className="w-8 h-8 text-gray-400" />
+                                        </div>
+                                        <p className="font-medium text-gray-700">Ready to train?</p>
+                                        <p className="text-sm mt-2 max-w-[200px]">Click "Generate Plan" and I'll build a custom week based on your data.</p>
                                     </div>
                                 )}
                             </div>
@@ -476,8 +522,17 @@ export default function Dashboard({ isGuest = false }: { isGuest?: boolean }) {
                         isOpen={showSocialMedia}
                         onClose={() => setShowSocialMedia(false)}
                     />
+
                 </div>
-                <Footer onAboutClick={() => setShowAboutUs(true)} onFollowClick={() => setShowSocialMedia(true)} />
+                <Footer onAboutClick={() => setShowAboutUs(true)} onFollowClick={() => setShowSocialMedia(true)} darkMode={darkMode} />
+                <ChatWidget
+                    contextData={{
+                        activities: activities,
+                        zones: zones,
+                        userSettings: userSettings,
+                        plan: plan
+                    }}
+                />
             </div>
         </div>
     );

@@ -15,9 +15,11 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { blogPosts } from '@/data/blogPosts';
 
+import { useTheme } from '@/context/ThemeContext';
+
 export default function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = use(params);
-    const [darkMode, setDarkMode] = useState(false);
+    const { darkMode, setDarkMode } = useTheme();
     const [showAboutUs, setShowAboutUs] = useState(false);
     const [showSocialMedia, setShowSocialMedia] = useState(false);
     const [showIntro, setShowIntro] = useState(false);
@@ -81,7 +83,7 @@ export default function BlogPostPage({ params }: { params: Promise<{ slug: strin
                 </main>
             </div>
 
-            <Footer onAboutClick={() => setShowAboutUs(true)} onFollowClick={() => setShowSocialMedia(true)} />
+            <Footer onAboutClick={() => setShowAboutUs(true)} onFollowClick={() => setShowSocialMedia(true)} darkMode={darkMode} />
 
             <AboutUsModal
                 isOpen={showAboutUs}

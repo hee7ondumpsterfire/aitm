@@ -10,6 +10,7 @@ export interface UserSettings {
     weight: number;
     height: number;
     colorBlindMode?: boolean;
+    darkMode?: boolean;
     activities?: any[];
     lastActivityFetch?: number;
 }

@@ -11,25 +11,25 @@ export default function SocialMediaModal({ isOpen, onClose }: SocialMediaModalPr
     const socialLinks = [
         {
             name: 'Instagram',
-            url: 'https://instagram.com',
+            url: '#',
             icon: <Instagram className="w-12 h-12" />,
-            color: 'text-pink-600 hover:scale-110'
+            color: 'text-gray-300 pointer-events-none cursor-not-allowed'
         },
         {
             name: 'YouTube',
-            url: 'https://youtube.com',
+            url: 'https://youtube.com/@coachweek?si=U5QQgfw3FCeFxuih',
             icon: <Youtube className="w-12 h-12" />,
             color: 'text-red-600 hover:scale-110'
         },
         {
             name: 'X (Twitter)',
-            url: 'https://x.com',
+            url: '#',
             icon: <Twitter className="w-12 h-12" />,
-            color: 'text-blue-400 hover:scale-110'
+            color: 'text-gray-300 pointer-events-none cursor-not-allowed'
         },
         {
             name: 'TikTok',
-            url: 'https://tiktok.com',
+            url: '#',
             icon: (
                 <svg
                     viewBox="0 0 24 24"
@@ -43,7 +43,7 @@ export default function SocialMediaModal({ isOpen, onClose }: SocialMediaModalPr
                     <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
                 </svg>
             ),
-            color: 'text-black hover:scale-110'
+            color: 'text-gray-300 pointer-events-none cursor-not-allowed'
         },
     ];
 
@@ -58,24 +58,25 @@ export default function SocialMediaModal({ isOpen, onClose }: SocialMediaModalPr
                 </button>
 
                 <div className="text-center">
-                    <h3 className="text-3xl font-extrabold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-600">
+                    <h3 className="text-3xl font-extrabold mb-2 text-[#8B5CF6]">
                         Join the Community
                     </h3>
-                    <p className="text-gray-500 mb-10">Follow us for daily tips and motivation</p>
+                    <p className="text-gray-500 mb-10">Use #coachweek and #coachweekworkout to become part of our community.</p>
 
                     <div className="grid grid-cols-2 gap-6">
                         {socialLinks.map((link) => (
                             <a
                                 key={link.name}
                                 href={link.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                target={link.url !== '#' ? "_blank" : undefined}
+                                rel={link.url !== '#' ? "noopener noreferrer" : undefined}
                                 className={`flex flex-col items-center justify-center p-6 rounded-2xl bg-gray-50 hover:bg-white border border-transparent hover:border-gray-200 hover:shadow-xl transition-all duration-300 group ${link.color}`}
+                                aria-disabled={link.url === '#'}
                             >
                                 <div className="mb-3 transition-transform duration-300 transform group-hover:-translate-y-1">
                                     {link.icon}
                                 </div>
-                                <span className="text-sm font-semibold text-gray-600 group-hover:text-gray-900">
+                                <span className={`text-sm font-semibold ${link.url === '#' ? 'text-gray-400' : 'text-gray-600 group-hover:text-gray-900'}`}>
                                     {link.name}
                                 </span>
                             </a>
